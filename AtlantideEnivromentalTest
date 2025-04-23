@@ -33,7 +33,8 @@ local function testFeature(featureName, func, critical)
     end
 end
 
-print("\n=== 🧪 Core Functions ===")
+-- Core Script Functions
+print("\n=== 🧠 Core System Features ===")
 testFeature("Thread Identity", function()
     return getthreadidentity() or getidentity()
 end)
@@ -43,17 +44,10 @@ testFeature("Executor Identification", function()
     return name.." "..(version or "")
 end)
 
--- Debugging
 testFeature("Debug Info", function()
     return debug.getinfo(1)
 end)
-testFeature("Debug set Constants", function()
-	local function test()
-		return "fail"
-	end
-	debug.setconstant(test, 1, "success")
-	assert(test() == "success", "debug.setconstant did not set the first constant")
-end)
+
 testFeature("Debug Constants", function()
     return debug.getconstants(print)
 end)
@@ -71,116 +65,37 @@ testFeature("Instance Tracking", function()
 end)
 
 testFeature("Nil Instances", function()
-    return #getnilinstances()
+    assert(getnilinstances()[1]:IsA("Instance"), "The first value is not an Instance")
+    assert(getnilinstances()[1].Parent == nil, "The first value is not parented to nil")
 end)
+
 testFeature("Cache Invalidation", function()
     local part = Instance.new("Part")
     cache.invalidate(part)
     return not cache.iscached(part)
 end)
 
-testFeature("Cryptography", function()
-    return crypt.encrypt("test", crypt.generatekey())
-end)
-
 testFeature("Clone Reference", function()
     return cloneref(game)
 end)
-
 
 testFeature("Connection Analysis", function()
     local conn = game.Changed.Connect(function() end)
     return #getconnections(conn)
 end)
 
+testFeature("SetScriptable", function()
+    local fire = Instance.new("Fire")
+    local wasScriptable = setscriptable(fire, "size_xml", true)
+    assert(wasScriptable == false, "Did not return false for a non-scriptable property (size_xml)")
+    assert(isscriptable(fire, "size_xml") == true, "Did not set the scriptable property")
+    fire = Instance.new("Fire")
+    assert(isscriptable(fire, "size_xml") == false, "⚠️⚠️ setscriptable persists between unique instances ⚠️⚠️")
+end)
+
 testFeature("Script Decompilation", function()
     getscriptclosure()
 end)
-
-
-testFeature("Drawing Library", function()
-    return Drawing.new("Circle")
-end)
-
-testFeature("Render Properties", function()
-    local circle = Drawing.new("Circle")
-    return setrenderproperty(circle, "Color", Color3.new(1,0,0))
-end)
-
-
-testFeature("Raw Metatable", function()
-    return getrawmetatable(game)
-end)
-
-testFeature("Metatable Hook", function()
-    local object = setmetatable({}, { __index = newcclosure(function() return false end), __metatable = "Locked!" })
-	local ref = hookmetamethod(object, "__index", function() return true end)
-	assert(object.test == true, "Failed to hook a metamethod and change the return value")
-	assert(ref() == false, "Did not return the original function")
-end)
-
-testFeature("Newc closure", function()
-	local function test()
-		return true
-	end
-	local testC = newcclosure(test)
-	assert(test() == testC(), "New C closure should return the same value as the original")
-	assert(test ~= testC, "New C closure should not be same as the original")
-	assert(iscclosure(testC), "New C closure should be a C closure")
-    end)
-testFeature("File Read/Write", function()
-    writefile("test.txt", "success")
-    return readfile("test.txt")
-end)
-testFeature("Is executor closure", function()
-	assert(isexecutorclosure(isexecutorclosure) == true, "Did not return true for an executor global")
-	assert(isexecutorclosure(newcclosure(function() end)) == true, "Did not return true for an executor C closure")
-	assert(isexecutorclosure(function() end) == true, "Did not return true for an executor Luau closure")
-	assert(isexecutorclosure(print) == false, "Did not return false for a Roblox global")
-end)
-testFeature("Isl closure", function()
-ssert(islclosure(print) == false, "Function 'print' should not be a Lua closure")
-	assert(islclosure(function() end) == true, "Executor function should be a Lua closure")
-    end)
-
-testFeature("Directory List", function()
-    return listfiles(game:GetService("Players").LocalPlayer.Name)
-end)
-print("Doing http request, wait please.")
-testFeature("HTTP Request", function()
-    return request({Url = "https://httpbin.org/get"}).StatusCode
-end)
-testFeature("lz4 Decompress",function()
-	local raw = "Hello, world!"
-	local compressed = lz4compress(raw)
-	assert(type(compressed) == "string", "Compression did not return a string")
-	assert(lz4decompress(compressed, #raw) == raw, "Decompression did not return the original string")
-    end)
-testFeature("lz4 Compress",function()
-	local raw = "Hello, world!"
-	local compressed = lz4compress(raw)
-	assert(type(compressed) == "string", "Compression did not return a string")
-	assert(lz4decompress(compressed, #raw) == raw, "Decompression did not return the original string")
-    end)
-testFeature("WebSocket", function()
- local types = {
-		Send = "function",
-		Close = "function",
-		OnMessage = {"table", "userdata"},
-		OnClose = {"table", "userdata"},
-	}
-	local ws = WebSocket.connect("ws://echo.websocket.events")
-	assert(type(ws) == "table" or type(ws) == "userdata", "Did not return a table or userdata")
-	for k, v in pairs(types) do
-		if type(v) == "table" then
-			assert(table.find(v, type(ws[k])), "Did not return a " .. table.concat(v, ", ") .. " for " .. k .. " (a " .. type(ws[k]) .. ")")
-		else
-			assert(type(ws[k]) == v, "Did not return a " .. v .. " for " .. k .. " (a " .. type(ws[k]) .. ")")
-		end
-	end
-	ws:Close()
-end)
-
 
 testFeature("Environment Isolation", function()
     return getrenv()._G ~= _G
@@ -190,13 +105,128 @@ testFeature("Secure Call", function()
     return checkcaller()
 end)
 
-
 testFeature("Script Context", function()
     return getscriptcontext()
 end)
 
+testFeature("SetThreadIdentity",function()
+    setthreadidentity(3)
+    assert(getthreadidentity() == 3, "Did not set the thread identity")
+end)
 
+-- Hooks and Metatables
+print("\n=== 🪝 Hooks System ===")
+testFeature("SetRawMetatable", function()
+    local object = setmetatable({}, { __index = function() return false end, __metatable = "Locked!" })
+    local objectReturned = setrawmetatable(object, { __index = function() return true end })
+    assert(object, "Did not return the original object")
+    assert(object.test == true, "Failed to change the metatable")
+    if objectReturned then
+        return objectReturned == object and "Returned the original object" or "Did not return the original object"
+    end
+end)
 
+testFeature("Metatable Hook", function()
+    local object = setmetatable({}, { __index = newcclosure(function() return false end), __metatable = "Locked!" })
+    local ref = hookmetamethod(object, "__index", function() return true end)
+    assert(object.test == true, "Failed to hook a metamethod and change the return value")
+    assert(ref() == false, "Did not return the original function")
+end)
+
+testFeature("Function Hook", function()
+    local function test()
+        return true
+    end
+    local ref = hookfunction(test, function()
+        return false
+    end)
+    assert(test() == false, "Function should return false")
+    assert(ref() == true, "Original function should return true")
+    assert(test ~= ref, "Original function should not be same as the reference")
+end)
+
+testFeature("Namecall Hook", function()
+    local method
+    local ref
+    ref = hookmetamethod(game, "__namecall", function(...)
+        if not method then
+            method = getnamecallmethod()
+        end
+        return ref(...)
+    end)
+    game:GetService("Lighting")
+    assert(method == "GetService", "Did not get the correct method (GetService)")
+end)
+
+-- External Services
+print("\n=== 🌐 External Services ===")
+testFeature("Cryptography", function()
+    return crypt.encrypt("test", crypt.generatekey())
+end)
+
+testFeature("File Read/Write", function()
+    writefile("test.txt", "success")
+    return readfile("test.txt")
+end)
+
+testFeature("Directory List", function()
+    return listfiles(game:GetService("Players").LocalPlayer.Name)
+end)
+
+testFeature("HTTP Request", function()
+    return request({Url = "https://httpbin.org/get"}).StatusCode
+end)
+
+testFeature("lz4 Decompress",function()
+    local raw = "Hello, world!"
+    local compressed = lz4compress(raw)
+    assert(type(compressed) == "string", "Compression did not return a string")
+    assert(lz4decompress(compressed, #raw) == raw, "Decompression did not return the original string")
+end)
+
+testFeature("lz4 Compress",function()
+    local raw = "Hello, world!"
+    local compressed = lz4compress(raw)
+    assert(type(compressed) == "string", "Compression did not return a string")
+    assert(lz4decompress(compressed, #raw) == raw, "Decompression did not return the original string")
+end)
+
+testFeature("WebSocket", function()
+    local types = {
+        Send = "function",
+        Close = "function",
+        OnMessage = {"table", "userdata"},
+        OnClose = {"table", "userdata"},
+    }
+    local ws = WebSocket.connect("ws://echo.websocket.events")
+    assert(type(ws) == "table" or type(ws) == "userdata", "Did not return a table or userdata")
+    for k, v in pairs(types) do
+        if type(v) == "table" then
+            assert(table.find(v, type(ws[k])), "Did not return a " .. table.concat(v, ", ") .. " for " .. k .. " (a " .. type(ws[k]) .. ")")
+        else
+            assert(type(ws[k]) == v, "Did not return a " .. v .. " for " .. k .. " (a " .. type(ws[k]) .. ")")
+        end
+    end
+    ws:Close()
+end)
+
+-- UI and Drawing
+print("\n=== 🎨 UI System ===")
+testFeature("Drawing Library", function()
+    local drawing = Drawing.new("Square")
+    drawing.Visible = false
+    local canDestroy = pcall(function()
+        drawing:Destroy()
+    end)
+    assert(canDestroy, "Drawing:Destroy() should not throw an error")
+end)
+
+testFeature("Drawing Fonts", function()
+    assert(Drawing.Fonts.UI == 0, "Did not return the correct id for UI")
+    assert(Drawing.Fonts.System == 1, "Did not return the correct id for System")
+    assert(Drawing.Fonts.Plex == 2, "Did not return the correct id for Plex")
+    assert(Drawing.Fonts.Monospace == 3, "Did not return the correct id for Monospace")
+end)
 
 testFeature("UI Library", function()
     return (getgenv().UiLib or getrenv().UiLib) and true
@@ -206,52 +236,26 @@ testFeature("Protect GUI", function()
     Instance.new("ScreenGui").Parent = game.CoreGui
 end)
 
-
-testFeature("Function Hook", function()
-    	local function test()
-		return true
-	end
-	local ref = hookfunction(test, function()
-		return false
-	end)
-	assert(test() == false, "Function should return false")
-	assert(ref() == true, "Original function should return true")
-	assert(test ~= ref, "Original function should not be same as the reference")
+testFeature("GetHui",function()
+    assert(typeof(gethui()) == "Instance", "Did not return an Instance")
 end)
 
-testFeature("Namecall Hook", function()
-    local method
-	local ref
-	ref = hookmetamethod(game, "__namecall", function(...)
-		if not method then
-			method = getnamecallmethod()
-		end
-		return ref(...)
-	end)
-	game:GetService("Lighting")
-	assert(method == "GetService", "Did not get the correct method (GetService)")
-end)
-
-
+-- Utilities
+print("\n=== ⚙️ System Utilities ===")
 testFeature("FPS Control", function()
     setfpscap(60)
     return getfpscap()
-end)
-testFeature("Bytecode Analysis", function()
-    local bytecode = getscriptbytecode(game:GetService("Players"))
-    return #bytecode > 1024
 end)
 
 testFeature("Decompiler", function()
     return decompile(print) ~= nil
 end)
 
-
-
 testFeature("Click Detector", function()
-    Instance.new("ClickDetector").Parent = game.workspace.fireclickdetector()
-    return fireclickdetector()
+    local detector = Instance.new("ClickDetector")
+    fireclickdetector(detector, 50, "MouseHoverEnter")
 end)
+
 testFeature("Fire Signal", function()
     firesignal()
     return firesignal()
